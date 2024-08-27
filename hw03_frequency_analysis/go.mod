@@ -1,4 +1,4 @@
-module github.com/fixme_my_friend/hw03_frequency_analysis
+module github.com/bimboterminator1/otus_hwgo/hw03_frequency_analysis
 
 go 1.22
 
