@@ -50,13 +50,40 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+		c := NewCache(3)
+		c.Set("key1", 10)
+		c.Set("key2", 20)
+		c.Set("key3", 30)
+		c.Set("key4", 40)
+
+		_, ok := c.Get("key4")
+		require.True(t, ok)
+
+		_, ok = c.Get("key1")
+		require.False(t, ok)
+	})
+
+	t.Run("least frequent object", func(t *testing.T) {
+		c := NewCache(3)
+		c.Set("key1", 10)
+		c.Set("key2", 20)
+		c.Set("key3", 30)
+
+		c.Get("key1")
+		c.Set("key2", 50)
+		c.Get("key1")
+
+		c.Set("key4", 40)
+		_, ok := c.Get("key4")
+		require.True(t, ok)
+
+		// key3 is the oldest item in the queue and should be purged
+		_, ok = c.Get("key3")
+		require.False(t, ok)
 	})
 }
 
-func TestCacheMultithreading(t *testing.T) {
-	t.Skip() // Remove me if task with asterisk completed.
-
+func TestCacheMultithreading(_ *testing.T) {
 	c := NewCache(10)
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
