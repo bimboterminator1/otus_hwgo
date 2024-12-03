@@ -80,7 +80,6 @@ func Run(tasks []Task, n, m int) error {
 	wg.Wait()
 
 	if m > 0 && atomic.LoadInt64(&errCount) >= int64(m) {
-		once.Do(func() { close(stopChan) })
 		return ErrErrorsLimitExceeded
 	}
 	close(stopChan)
