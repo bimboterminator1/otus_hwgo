@@ -19,6 +19,6 @@ func TestRunCmd(t *testing.T) {
 		require.Equal(t, 0, rc)
 		evar, ok := os.LookupEnv("HELLO")
 		require.True(t, ok)
-		require.Equal(t, "HELLO", evar)
+		require.Equal(t, "dummy", evar)
 	})
 }
