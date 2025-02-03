@@ -31,4 +31,28 @@ install-lint-deps:
 lint: install-lint-deps
 	golangci-lint -c ./.golangci.yml run ./...
 
-.PHONY: build run build-img run-img version test lint
+POSTGRES_USER := postgres
+POSTGRES_PASSWORD := postgres
+POSTGRES_DB := calendar
+APP_USER := appuser
+APP_PASSWORD := apppass
+POSTGRES_PORT := 5432
+CONTAINER_NAME := calendar_postgres
+
+postgres:
+	docker run --name $(CONTAINER_NAME) \
+		-e POSTGRES_PASSWORD=$(POSTGRES_PASSWORD) \
+		-e POSTGRES_USER=$(POSTGRES_USER) \
+		-p $(POSTGRES_PORT):5432 \
+		-d postgres && \
+	sleep 3 && \
+	docker exec -it $(CONTAINER_NAME) psql -U $(POSTGRES_USER) -c "CREATE USER $(APP_USER) WITH PASSWORD '$(APP_PASSWORD)';" && \
+	docker exec -it $(CONTAINER_NAME) psql -U $(POSTGRES_USER) -c "CREATE DATABASE $(POSTGRES_DB);" && \
+	docker exec -it $(CONTAINER_NAME) psql -U $(POSTGRES_USER) -c "GRANT ALL PRIVILEGES ON DATABASE $(POSTGRES_DB) TO $(APP_USER);" && \
+	docker exec -it $(CONTAINER_NAME) psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -c "GRANT ALL ON SCHEMA public TO $(APP_USER);"
+
+pg-down:
+	docker stop $(CONTAINER_NAME) || true
+	docker rm $(CONTAINER_NAME) || true
+
+.PHONY: build run build-img run-img version test lint postgres pg-down
