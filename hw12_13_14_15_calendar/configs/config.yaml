@@ -1,0 +1,11 @@
+components:
+  server:
+    listener:
+      port: 8080
+      host: 0.0.0.0
+  logging:
+    file_path: '@stderr'
+    level: debug
+    type: json
+  storage:
+    type: memory

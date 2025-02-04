@@ -3,21 +3,26 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	//nolint:depguard
 	"github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/app"
+	"github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/config"
 	"github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/server/http"
+	"github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/storage"
 	memorystorage "github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/storage/memory"
+	sqlstorage "github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
 var configFile string
 
 func init() {
-	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
+	flag.StringVar(&configFile, "config", "./config.yaml", "Path to configuration file")
 }
 
 func main() {
@@ -28,13 +33,34 @@ func main() {
 		return
 	}
 
-	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
+	config, err := config.LoadConfig(configFile)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
 
-	storage := memorystorage.New()
-	calendar := app.New(logg, storage)
+	logg, err := logger.NewLogger(config.Components.Logging.FilePath,
+		config.Components.Logging.Level,
+		logger.LogFormat(config.Components.Logging.Type))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Couldn't initialize logger: %s", err.Error())
+		os.Exit(1)
+	}
 
-	server := internalhttp.NewServer(logg, calendar)
+	var storage storage.Storage
+	if config.Components.Storage.Type == "memory" {
+		storage = memorystorage.New()
+	} else if config.Components.Storage.Type == "postgres" {
+		storage, err = sqlstorage.New(config.Components.Storage)
+		if err != nil {
+			logg.Error(err.Error())
+			os.Exit(1)
+		}
+	}
+
+	calendar := app.New(*logg, storage)
+
+	server := internalhttp.NewServer(logg, *calendar, config.Components.Server)
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
