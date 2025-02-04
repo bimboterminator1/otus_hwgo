@@ -35,10 +35,10 @@ func TestTelnetClient(t *testing.T) {
 
 			in.WriteString("hello\n")
 			err = client.Send()
-			require.NoError(t, err)
+			require.ErrorIs(t, err, io.EOF)
 
 			err = client.Receive()
-			require.NoError(t, err)
+			require.ErrorIs(t, err, io.EOF)
 			require.Equal(t, "world\n", out.String())
 		}()
 
@@ -61,5 +61,11 @@ func TestTelnetClient(t *testing.T) {
 		}()
 
 		wg.Wait()
+	})
+
+	t.Run("basic", func(t *testing.T) {
+		tClient := NewTelnetClient("inceoorectip:80", 1000, nil, io.Discard)
+		err := tClient.Connect()
+		require.Error(t, err)
 	})
 }
