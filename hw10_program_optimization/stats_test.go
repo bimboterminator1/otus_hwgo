@@ -1,3 +1,4 @@
+//go:build !bench
 // +build !bench
 
 package hw10programoptimization
@@ -34,6 +35,54 @@ func TestGetDomainStat(t *testing.T) {
 	t.Run("find 'unknown'", func(t *testing.T) {
 		result, err := GetDomainStat(bytes.NewBufferString(data), "unknown")
 		require.NoError(t, err)
+		require.Equal(t, DomainStat{}, result)
+	})
+	t.Run("counting all domains", func(t *testing.T) {
+		u := User{
+			Username: "qRicha@rdson",
+			Email:    "qwerty@TROLOLO.com",
+		}
+		u2 := User{
+			Email: "ololo@trololo.com",
+		}
+		testdata := []User{u, u2}
+		result := countDomains(testdata, "com")
+		require.Equal(t, DomainStat{"trololo.com": 2}, result)
+	})
+
+	t.Run("there are no suitable data", func(t *testing.T) {
+		u := User{
+			Email: "qwerty@TROLOLO.su",
+		}
+		testdata := []User{u}
+		result := countDomains(testdata, "com")
+		require.Equal(t, DomainStat{}, result)
+	})
+
+	t.Run("there are no suitable data, email contains domain", func(t *testing.T) {
+		u := User{
+			Email: "com@TROLOLO.su",
+		}
+		testdata := []User{u}
+		result := countDomains(testdata, "com")
+		require.Equal(t, DomainStat{}, result)
+	})
+
+	t.Run("there are no suitable data, email contains domain, no dot", func(t *testing.T) {
+		u := User{
+			Email: "qwerty@com",
+		}
+		testdata := []User{u}
+		result := countDomains(testdata, "com")
+		require.Equal(t, DomainStat{}, result)
+	})
+
+	t.Run("there are no suitable data, email contains domain, no @", func(t *testing.T) {
+		u := User{
+			Email: "qwertygmail.com",
+		}
+		testdata := []User{u}
+		result := countDomains(testdata, "com")
 		require.Equal(t, DomainStat{}, result)
 	})
 }
