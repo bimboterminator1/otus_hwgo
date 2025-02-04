@@ -13,6 +13,7 @@ import (
 	"github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/app"
 	"github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/config"
 	"github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/logger"
+	grpcserver "github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/server/grpc"
 	internalhttp "github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/server/http"
 	"github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/storage"
 	memorystorage "github.com/bimboterminator1/otus_hwgo/hw12_13_14_15_calendar/internal/storage/memory"
@@ -60,7 +61,12 @@ func main() {
 
 	calendar := app.New(*logg, storage)
 
-	server := internalhttp.NewServer(logg, *calendar, config.Components.Server)
+	var server app.Server
+	if config.Components.Server.Listener.Protocol == "http" {
+		server = internalhttp.NewServer(logg, calendar, config.Components.Server)
+	} else {
+		server = grpcserver.NewGrpcServer(logg, calendar, config.Components.Server)
+	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)

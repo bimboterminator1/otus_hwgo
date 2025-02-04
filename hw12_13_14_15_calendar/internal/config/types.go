@@ -39,8 +39,9 @@ type ServerConfig struct {
 
 // ListenerConfig holds server listener configurations.
 type ListenerConfig struct {
-	Port int    `yaml:"port"`
-	Host string `yaml:"host"`
+	Protocol string `yaml:"protocol"`
+	Port     int    `yaml:"port"`
+	Host     string `yaml:"host"`
 }
 
 // LoggingConfig holds logging specific configurations.
