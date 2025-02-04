@@ -26,7 +26,7 @@ test:
 	go test -race ./internal/... 
 
 install-lint-deps:
-	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.57.2
+	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.60.3
 
 lint: install-lint-deps
 	golangci-lint -c ./.golangci.yml run ./...
@@ -54,5 +54,10 @@ postgres:
 pg-down:
 	docker stop $(CONTAINER_NAME) || true
 	docker rm $(CONTAINER_NAME) || true
+
+generate:
+	protoc -I ./api/proto ./api/proto/*.proto --go_out=./api/gen/ \
+	 --go-grpc_out=./api/gen/ 
+	
 
 .PHONY: build run build-img run-img version test lint postgres pg-down

@@ -15,16 +15,16 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Server struct {
+type HTTPServer struct {
 	logger *logger.Logger
-	app    app.App
+	app    *app.App
 	server *http.Server
 	router *mux.Router
 	conf   config.ServerConfig
 }
 
-func NewServer(logger *logger.Logger, app app.App, conf config.ServerConfig) *Server {
-	s := &Server{
+func NewServer(logger *logger.Logger, app *app.App, conf config.ServerConfig) app.Server {
+	s := &HTTPServer{
 		logger: logger,
 		app:    app,
 		router: mux.NewRouter(),
@@ -35,18 +35,25 @@ func NewServer(logger *logger.Logger, app app.App, conf config.ServerConfig) *Se
 	return s
 }
 
-func (s *Server) setupRoutes() {
+func (s *HTTPServer) setupRoutes() {
 	s.router.Use(func(next http.Handler) http.Handler {
 		return LoggingMiddleware(s.logger, next)
 	})
-	s.router.HandleFunc("/hello", handlers.HandleHello).Methods("GET")
 
-	// s.router.HandleFunc("/events/{id}", s.handleDeleteEvent).Methods("DELETE")
+	eventHandlers := handlers.NewEventHandlers(s.app, s.logger)
 
-	// s.router.HandleFunc("/events", s.handleListEvents).Methods("GET")
+	s.router.HandleFunc("/events", eventHandlers.HandleCreateEvent).Methods("POST")
+	s.router.HandleFunc("/events/{id}", eventHandlers.HandleUpdateEvent).Methods("PUT")
+	s.router.HandleFunc("/events/{id}", eventHandlers.HandleDeleteEvent).Methods("DELETE")
+	s.router.HandleFunc("/events/day",
+		eventHandlers.HandleListEventsForDay).Methods("GET").Queries("date", "{date}", "user_id", "{user_id}")
+	s.router.HandleFunc("/events/week",
+		eventHandlers.HandleListEventsForWeek).Methods("GET").Queries("date", "{date}", "user_id", "{user_id}")
+	s.router.HandleFunc("/events/month",
+		eventHandlers.HandleListEventsForMonth).Methods("GET").Queries("date", "{date}", "user_id", "{user_id}")
 }
 
-func (s *Server) Start(ctx context.Context) error {
+func (s *HTTPServer) Start(ctx context.Context) error {
 	addr := net.JoinHostPort(s.conf.Listener.Host, strconv.Itoa(s.conf.Listener.Port))
 	s.server = &http.Server{
 		Addr:    addr,
@@ -66,7 +73,7 @@ func (s *Server) Start(ctx context.Context) error {
 	return nil
 }
 
-func (s *Server) Stop(ctx context.Context) error {
+func (s *HTTPServer) Stop(ctx context.Context) error {
 	s.logger.Info("Stopping HTTP server")
 	return s.server.Shutdown(ctx)
 }

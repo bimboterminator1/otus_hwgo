@@ -164,7 +164,6 @@ func (p *PostgresStorage) ListEvents(ctx context.Context, userID int64, from, to
     AND end_time >= $2
     ORDER BY start_time ASC
     `
-
 	var events []*storage.Event
 	err := p.db.SelectContext(ctx, &events, query, userID, from, to)
 	if err != nil {
